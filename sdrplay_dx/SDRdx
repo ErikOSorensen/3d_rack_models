@@ -1,0 +1,14 @@
+# SDRdx
+
+The SDRdx unit is a small sdr radio. 
+
+It needs to fit in a 1U unit.
+
+The bracket should be centered on the 1U front, the front 
+
+- the unit is 133 x 94 x 35 mm.
+- The front aparture should have a 2mm lip to hold the unit. 
+- The shelf should have side fins and a stopper at the end.
+- The datasheet is at https://www.sdr-kits.net/RSPdxDatasheetV1.0.pdf
+- The antenna ports should be at the front.
+
