@@ -23,3 +23,10 @@ in my homemade racks:
 - The mounting holes will be slots that are 5 mm horizontally wider than necessary for M6 bolts.
 - Ideally, width of the shelf holding equipment on the back of the front will be 10mm narrower than the standard allows (because of the woodwork lacking precision).
 
+
+# Connector panels
+
+`connector_panel()` in `lib/rack10.scad` makes a plain rack panel with a row of
+Neutrik D-size (front or rear mounted) and/or keystone connectors. See
+[connector_panel/README.md](connector_panel/README.md) for the design rules, how to
+make a panel, and printing and fit notes.
