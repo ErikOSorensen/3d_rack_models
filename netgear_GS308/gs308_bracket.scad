@@ -31,6 +31,7 @@ wall_t = 4;                 // side wall thickness
 wall_above_shelf = 24;      // side wall height above the shelf top
 wall_bottom = 0.5;          // side walls extend down to this z (stiffens the shelf)
 vent_margin = 1.5;          // vent window is this much bigger than the vent, all round
+fillet_r = 25;               // fillet between the outside of each side wall and the panel (0: none)
 rear_stop_t = 3;            // rear lip thickness
 rear_stop_h = 5;            // rear lip height above the shelf (0 for none)
 
@@ -47,6 +48,7 @@ print_oriented(print_orientation) {
                   shelf_t = shelf_t, wall_t = wall_t,
                   wall_above_shelf = wall_above_shelf, wall_bottom = wall_bottom,
                   rear_stop_t = rear_stop_t, rear_stop_h = rear_stop_h,
+                  fillet_r = fillet_r,
                   vents = [[vent_front, vent_back, unit_h / 2, vent_h]],
                   vent_margin = vent_margin);
     if (show_unit) unit_ghost(unit, rack_u);

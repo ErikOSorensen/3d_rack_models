@@ -34,6 +34,7 @@ shelf_t = 3;                // shelf thickness (only 4.3 mm available under the 
 wall_t = 4;                 // side wall thickness
 wall_above_shelf = 33;      // side wall height above the shelf top
 wall_bottom = 0;            // clamped to the shelf bottom by the library
+fillet_r = 25;               // fillet between the outside of each side wall and the panel (0: none)
 rear_stop_t = 3;            // rear lip thickness
 rear_stop_h = 5;            // rear lip height above the shelf (0 for none)
 
@@ -49,6 +50,7 @@ print_oriented(print_orientation) {
                   side_clear = side_clear, rear_clear = rear_clear,
                   shelf_t = shelf_t, wall_t = wall_t,
                   wall_above_shelf = wall_above_shelf, wall_bottom = wall_bottom,
-                  rear_stop_t = rear_stop_t, rear_stop_h = rear_stop_h);
+                  rear_stop_t = rear_stop_t, rear_stop_h = rear_stop_h,
+                  fillet_r = fillet_r);
     if (show_unit) unit_ghost(unit, rack_u);
 }

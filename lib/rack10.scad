@@ -85,11 +85,13 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5) {
 //   vents           [[y_from, y_to, z_centre, height], ...] openings in the side
 //                   walls, in unit coordinates (from its front face / bottom)
 //   vent_margin     vent openings are this much larger than listed, all round
+//   fillet_r        radius of the solid fillets joining the outside face of each
+//                   side wall to the back of the panel (0: none)
 module shelf_bracket(unit, rack_u = 1, lip = 1,
                      side_clear = 0.75, rear_clear = 1.0,
                      shelf_t = 4, wall_t = 4, wall_above_shelf = undef, wall_bottom = 0.5,
                      rear_stop_t = 3, rear_stop_h = 5,
-                     vents = [], vent_margin = 1.5,
+                     vents = [], vent_margin = 1.5, fillet_r = 8,
                      panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_extra = 5) {
     unit_w = unit[0]; unit_d = unit[1]; unit_h = unit[2];
     panel_h  = panel_height(rack_u);
@@ -107,6 +109,8 @@ module shelf_bracket(unit, rack_u = 1, lip = 1,
     assert(shelf_z0 >= 0, str("shelf does not fit under the unit (", shelf_z0, "): increase rack_u or reduce shelf_t"));
     assert(z0 + unit_h + lip <= panel_h, "unit too tall for the panel: increase rack_u");
     assert(HOLE_CC / 2 - slot_w / 2 > shelf_w / 2 + 1, "mounting slots collide with the shelf");
+    assert(HOLE_CC / 2 - slot_w / 2 > shelf_w / 2 + fillet_r + 1,
+           "side wall fillets collide with the mounting slots: reduce fillet_r");
 
     echo(str("panel ", PANEL_W, " x ", panel_h, " x ", panel_t,
              " mm, shelf ", shelf_w, " x ", shelf_d, " x ", shelf_t,
@@ -132,10 +136,25 @@ module shelf_bracket(unit, rack_u = 1, lip = 1,
                         cube([wall_t + 2, v[1] - v[0] + 2 * vent_margin, v[3] + 2 * vent_margin]);
             }
 
+        // fillets between the outside of each side wall and the back of the panel
+        if (fillet_r > 0)
+            for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
+                translate([shelf_w / 2, panel_t, wall_z0])
+                    linear_extrude(z0 + wall_h - wall_z0) fillet_2d(fillet_r);
+
         // rear stop
         if (rear_stop_h > 0)
             translate([-inner_w / 2, panel_t + rear_clear + unit_d, z0])
                 cube([inner_w, rear_stop_t, rear_stop_h]);
+    }
+}
+
+// Concave fillet filling the corner of the first quadrant, radius r, with a
+// small overlap into the walls it joins so the union is solid.
+module fillet_2d(r, overlap = 0.01) {
+    translate([-overlap, -overlap]) difference() {
+        square(r + overlap);
+        translate([r + overlap, r + overlap]) circle(r = r);
     }
 }
 
