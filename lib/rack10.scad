@@ -56,15 +56,16 @@ module rack_panel(rack_u = 1, panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_
 }
 
 // Aperture for a unit resting on a shelf, `lip` smaller than the unit all round.
-module unit_aperture(unit, rack_u = 1, lip = 1, panel_t = 5) {
+// unit_x moves the unit sideways from the panel centre.
+module unit_aperture(unit, rack_u = 1, lip = 1, panel_t = 5, unit_x = 0) {
     ap_w = unit[0] - 2 * lip;
     ap_h = unit[2] - 2 * lip;
-    translate([-ap_w / 2, -1, unit_z0(unit[2], rack_u) + lip]) cube([ap_w, panel_t + 2, ap_h]);
+    translate([unit_x - ap_w / 2, -1, unit_z0(unit[2], rack_u) + lip]) cube([ap_w, panel_t + 2, ap_h]);
 }
 
 // Translucent ghost of the unit, in its mounted position.
-module unit_ghost(unit, rack_u = 1, panel_t = 5) {
-    %translate([-unit[0] / 2, panel_t, unit_z0(unit[2], rack_u)]) cube(unit);
+module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0) {
+    %translate([unit_x - unit[0] / 2, panel_t, unit_z0(unit[2], rack_u)]) cube(unit);
 }
 
 // ------------------------------------------------------------ shelf bracket
@@ -73,6 +74,8 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5) {
 // unit is dropped in from above and rests against the back of the panel.
 //
 //   unit            [width, depth, height] of the equipment
+//   unit_x          sideways offset of the unit (and its shelf) from the panel
+//                   centre, to make room for something else beside it
 //   lip             panel overlaps the unit by this much on every side
 //   side_clear      clearance between unit and each side wall
 //   rear_clear      clearance between unit and the rear stop
@@ -87,7 +90,7 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5) {
 //   vent_margin     vent openings are this much larger than listed, all round
 //   fillet_r        radius of the solid fillets joining the outside face of each
 //                   side wall to the back of the panel (0: none)
-module shelf_bracket(unit, rack_u = 1, lip = 1,
+module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0,
                      side_clear = 0.75, rear_clear = 1.0,
                      shelf_t = 4, wall_t = 4, wall_above_shelf = undef, wall_bottom = 0.5,
                      rear_stop_t = 3, rear_stop_h = 5,
@@ -103,49 +106,53 @@ module shelf_bracket(unit, rack_u = 1, lip = 1,
     wall_h   = is_undef(wall_above_shelf) ? unit_h - 2 : wall_above_shelf;
     wall_z0  = max(wall_bottom, shelf_z0);
     slot_w   = bolt_clear + slot_extra;
+    reach    = abs(unit_x) + shelf_w / 2;          // outermost edge of the shelf
 
-    assert(shelf_w <= RAIL_OPENING - SHELF_MARGIN,
-           str("shelf is too wide: ", shelf_w, " > ", RAIL_OPENING - SHELF_MARGIN));
+    assert(2 * reach <= RAIL_OPENING - SHELF_MARGIN,
+           str("shelf is too wide or too far off centre: reaches x = ", reach,
+               " > ", (RAIL_OPENING - SHELF_MARGIN) / 2));
     assert(shelf_z0 >= 0, str("shelf does not fit under the unit (", shelf_z0, "): increase rack_u or reduce shelf_t"));
     assert(z0 + unit_h + lip <= panel_h, "unit too tall for the panel: increase rack_u");
-    assert(HOLE_CC / 2 - slot_w / 2 > shelf_w / 2 + 1, "mounting slots collide with the shelf");
-    assert(HOLE_CC / 2 - slot_w / 2 > shelf_w / 2 + fillet_r + 1,
+    assert(HOLE_CC / 2 - slot_w / 2 > reach + 1, "mounting slots collide with the shelf");
+    assert(HOLE_CC / 2 - slot_w / 2 > reach + fillet_r + 1,
            "side wall fillets collide with the mounting slots: reduce fillet_r");
 
     echo(str("panel ", PANEL_W, " x ", panel_h, " x ", panel_t,
              " mm, shelf ", shelf_w, " x ", shelf_d, " x ", shelf_t,
              " mm (bottom at z=", shelf_z0, "), aperture ", unit_w - 2 * lip, " x ", unit_h - 2 * lip,
-             " mm, ", 2 * len(hole_zs(rack_u)), " mounting slots ", slot_w, " x ", bolt_clear, " mm"));
+             " mm, ", 2 * len(hole_zs(rack_u)), " mounting slots ", slot_w, " x ", bolt_clear, " mm",
+             unit_x == 0 ? "" : str(", unit centred at x=", unit_x)));
 
     union() {
         rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra)
-            unit_aperture(unit, rack_u, lip, panel_t);
+            unit_aperture(unit, rack_u, lip, panel_t, unit_x);
+        translate([unit_x, 0, 0]) {
+            // shelf
+            translate([-shelf_w / 2, panel_t, shelf_z0]) cube([shelf_w, shelf_d, shelf_t]);
 
-        // shelf
-        translate([-shelf_w / 2, panel_t, shelf_z0]) cube([shelf_w, shelf_d, shelf_t]);
-
-        // side walls with vent windows
-        for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
-            difference() {
-                translate([inner_w / 2, panel_t, wall_z0])
-                    cube([wall_t, shelf_d, z0 + wall_h - wall_z0]);
-                for (v = vents)
-                    translate([inner_w / 2 - 1,
-                               panel_t + v[0] - vent_margin,
-                               z0 + v[2] - v[3] / 2 - vent_margin])
-                        cube([wall_t + 2, v[1] - v[0] + 2 * vent_margin, v[3] + 2 * vent_margin]);
-            }
-
-        // fillets between the outside of each side wall and the back of the panel
-        if (fillet_r > 0)
+            // side walls with vent windows
             for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
-                translate([shelf_w / 2, panel_t, wall_z0])
-                    linear_extrude(z0 + wall_h - wall_z0) fillet_2d(fillet_r);
+                difference() {
+                    translate([inner_w / 2, panel_t, wall_z0])
+                        cube([wall_t, shelf_d, z0 + wall_h - wall_z0]);
+                    for (v = vents)
+                        translate([inner_w / 2 - 1,
+                                   panel_t + v[0] - vent_margin,
+                                   z0 + v[2] - v[3] / 2 - vent_margin])
+                            cube([wall_t + 2, v[1] - v[0] + 2 * vent_margin, v[3] + 2 * vent_margin]);
+                }
 
-        // rear stop
-        if (rear_stop_h > 0)
-            translate([-inner_w / 2, panel_t + rear_clear + unit_d, z0])
-                cube([inner_w, rear_stop_t, rear_stop_h]);
+            // fillets between the outside of each side wall and the back of the panel
+            if (fillet_r > 0)
+                for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
+                    translate([shelf_w / 2, panel_t, wall_z0])
+                        linear_extrude(z0 + wall_h - wall_z0) fillet_2d(fillet_r);
+
+            // rear stop
+            if (rear_stop_h > 0)
+                translate([-inner_w / 2, panel_t + rear_clear + unit_d, z0])
+                    cube([inner_w, rear_stop_t, rear_stop_h]);
+        }
     }
 }
 
@@ -155,6 +162,58 @@ module fillet_2d(r, overlap = 0.01) {
     translate([-overlap, -overlap]) difference() {
         square(r + overlap);
         translate([r + overlap, r + overlap]) circle(r = r);
+    }
+}
+
+// ------------------------------------------------------------ PCB standoffs
+// A plate with short standoffs for a bare circuit board. Each standoff has a
+// blind hole for a heat-set insert that goes on down into the plate, so the
+// standoffs can stay short. Plate frame: corner at the origin, plate from
+// z = 0 to plate_t, standoffs on top.
+//
+//   size          [x, y] of the plate
+//   holes         [[x, y], ...] standoff centres in the plate frame
+//   standoff_h    standoff height above the plate (board underside clearance)
+//   standoff_d    standoff outside diameter
+//   insert_d      hole diameter for the heat-set insert (see the insert's datasheet)
+//   insert_depth  hole depth from the standoff top; at least 1 mm of plate stays below it
+//   flare         extra diameter of a 45 degree cone at the standoff foot
+module standoff_plate(size, holes, plate_t = 4, standoff_h = 5, standoff_d = 6.5,
+                      insert_d = 3.6, insert_depth = 6, flare = 2) {
+    assert(insert_depth <= plate_t + standoff_h - 1,
+           str("insert hole (", insert_depth, " mm) too deep for plate + standoff (",
+               plate_t + standoff_h, " mm): leave 1 mm below it"));
+    assert(standoff_d - insert_d >= 2, "standoff wall around the insert is thinner than 1 mm");
+    difference() {
+        union() {
+            cube([size[0], size[1], plate_t]);
+            for (h = holes) translate([h[0], h[1], plate_t - 0.01]) {
+                cylinder(d = standoff_d, h = standoff_h + 0.01);
+                if (flare > 0) cylinder(d1 = standoff_d + flare, d2 = standoff_d, h = flare / 2 + 0.01);
+            }
+        }
+        for (h = holes) translate([h[0], h[1], plate_t + standoff_h - insert_depth])
+            cylinder(d = insert_d, h = insert_depth + 1);
+    }
+}
+
+// Raspberry Pi 3 B / 3 B+ (also 2 B, 4 B: same board outline and holes).
+// Board frame: origin at the corner nearest the micro-USB power socket's end,
+// x along the 85 mm edge towards the USB/Ethernet end, y across, so that the
+// power/HDMI edge is y = 0 and the GPIO header runs along y = 56.
+RPI3_BOARD   = [85, 56];
+RPI3_PCB_T   = 1.4;
+RPI3_HOLES   = [[3.5, 3.5], [61.5, 3.5], [3.5, 52.5], [61.5, 52.5]];   // M2.5
+RPI3_TOP_H   = 17;     // tallest part above the board (USB stack), rounded up
+RPI3_PORTS   = [21, 2]; // USB/Ethernet block: length on the board, overhang past x = 85
+RPI3_POWER_X = 10.6;   // micro-USB power socket centre along the y = 0 edge
+
+// Translucent ghost of a Pi in its board frame, board underside at z = 0.
+module rpi3_ghost() {
+    %union() {
+        cube([RPI3_BOARD[0], RPI3_BOARD[1], RPI3_PCB_T]);
+        translate([RPI3_BOARD[0] - RPI3_PORTS[0], 1, RPI3_PCB_T])
+            cube([RPI3_PORTS[0] + RPI3_PORTS[1], RPI3_BOARD[1] - 2, RPI3_TOP_H]);
     }
 }
 

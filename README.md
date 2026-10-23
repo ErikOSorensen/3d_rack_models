@@ -30,3 +30,12 @@ in my homemade racks:
 Neutrik D-size (front or rear mounted) and/or keystone connectors. See
 [connector_panel/README.md](connector_panel/README.md) for the design rules, how to
 make a panel, and printing and fit notes.
+
+# PCB standoffs
+
+`standoff_plate()` in `lib/rack10.scad` makes a shelf plate with short standoffs for
+a bare circuit board. Each standoff has a hole for a heat-set insert that goes on
+down into the plate. The library also has the Raspberry Pi 3 B board outline and
+hole positions (`RPI3_*`). The miniSMU bracket in
+[undalogic_miniSMU](undalogic_miniSMU/miniSMU.md) uses them. A device file that
+needs the library's constants must `include` it, not `use` it.
