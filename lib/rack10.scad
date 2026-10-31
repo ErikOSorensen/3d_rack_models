@@ -29,6 +29,13 @@ function hole_zs(rack_u) = [ for (z = concat(
 
 // Z of the bottom of a unit of height unit_h, vertically centred on the panel.
 function unit_z0(unit_h, rack_u) = panel_height(rack_u) / 2 - unit_h / 2;
+// Z of the bottom of a unit: unit_z if given, otherwise centred.
+function unit_bottom(unit_h, rack_u, unit_z = undef) = is_undef(unit_z) ? unit_z0(unit_h, rack_u) : unit_z;
+
+// The panel lip around an aperture is either one number for all sides or
+// [sides, top/bottom].
+function lip_x(lip) = is_list(lip) ? lip[0] : lip;
+function lip_z(lip) = is_list(lip) ? lip[1] : lip;
 
 // ------------------------------------------------------------ front panel
 module rounded_rect(w, h, r) {
@@ -55,17 +62,19 @@ module rack_panel(rack_u = 1, panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_
     }
 }
 
-// Aperture for a unit resting on a shelf, `lip` smaller than the unit all round.
-// unit_x moves the unit sideways from the panel centre.
-module unit_aperture(unit, rack_u = 1, lip = 1, panel_t = 5, unit_x = 0) {
-    ap_w = unit[0] - 2 * lip;
-    ap_h = unit[2] - 2 * lip;
-    translate([unit_x - ap_w / 2, -1, unit_z0(unit[2], rack_u) + lip]) cube([ap_w, panel_t + 2, ap_h]);
+// Aperture for a unit resting on a shelf, `lip` smaller than the unit (one
+// number, or [sides, top/bottom]). unit_x moves the unit sideways from the
+// panel centre; unit_z is the bottom of the unit (default: vertically centred).
+module unit_aperture(unit, rack_u = 1, lip = 1, panel_t = 5, unit_x = 0, unit_z = undef) {
+    ap_w = unit[0] - 2 * lip_x(lip);
+    ap_h = unit[2] - 2 * lip_z(lip);
+    translate([unit_x - ap_w / 2, -1, unit_bottom(unit[2], rack_u, unit_z) + lip_z(lip)])
+        cube([ap_w, panel_t + 2, ap_h]);
 }
 
 // Translucent ghost of the unit, in its mounted position.
-module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0) {
-    %translate([unit_x - unit[0] / 2, panel_t, unit_z0(unit[2], rack_u)]) cube(unit);
+module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0, unit_z = undef) {
+    %translate([unit_x - unit[0] / 2, panel_t, unit_bottom(unit[2], rack_u, unit_z)]) cube(unit);
 }
 
 // ------------------------------------------------------------ shelf bracket
@@ -76,7 +85,10 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0) {
 //   unit            [width, depth, height] of the equipment
 //   unit_x          sideways offset of the unit (and its shelf) from the panel
 //                   centre, to make room for something else beside it
-//   lip             panel overlaps the unit by this much on every side
+//   unit_z          bottom of the unit above the panel bottom (default: the
+//                   unit is vertically centred on the panel)
+//   lip             panel overlaps the unit by this much on every side, or
+//                   [sides, top/bottom]
 //   side_clear      clearance between unit and each side wall
 //   rear_clear      clearance between unit and the rear stop
 //   shelf_t         shelf thickness
@@ -85,20 +97,22 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0) {
 //   wall_bottom     side walls extend down to this z (stiffens the shelf);
 //                   clamped so they never go below the shelf bottom
 //   rear_stop_t/h   rear lip thickness and height above the shelf (h = 0: none)
+//   rear_stop_gaps  [[x_from, x_to], ...] openings in the rear lip for cables,
+//                   measured from the left edge of the unit seen from the front
 //   vents           [[y_from, y_to, z_centre, height], ...] openings in the side
 //                   walls, in unit coordinates (from its front face / bottom)
 //   vent_margin     vent openings are this much larger than listed, all round
 //   fillet_r        radius of the solid fillets joining the outside face of each
 //                   side wall to the back of the panel (0: none)
-module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0,
+module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
                      side_clear = 0.75, rear_clear = 1.0,
                      shelf_t = 4, wall_t = 4, wall_above_shelf = undef, wall_bottom = 0.5,
-                     rear_stop_t = 3, rear_stop_h = 5,
+                     rear_stop_t = 3, rear_stop_h = 5, rear_stop_gaps = [],
                      vents = [], vent_margin = 1.5, fillet_r = 8,
                      panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_extra = 5) {
     unit_w = unit[0]; unit_d = unit[1]; unit_h = unit[2];
     panel_h  = panel_height(rack_u);
-    z0       = unit_z0(unit_h, rack_u);            // shelf top = bottom of the unit
+    z0       = unit_bottom(unit_h, rack_u, unit_z); // shelf top = bottom of the unit
     shelf_z0 = z0 - shelf_t;
     inner_w  = unit_w + 2 * side_clear;            // between the side walls
     shelf_w  = inner_w + 2 * wall_t;
@@ -112,20 +126,21 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0,
            str("shelf is too wide or too far off centre: reaches x = ", reach,
                " > ", (RAIL_OPENING - SHELF_MARGIN) / 2));
     assert(shelf_z0 >= 0, str("shelf does not fit under the unit (", shelf_z0, "): increase rack_u or reduce shelf_t"));
-    assert(z0 + unit_h + lip <= panel_h, "unit too tall for the panel: increase rack_u");
+    assert(z0 + unit_h + lip_z(lip) <= panel_h, "unit too tall for the panel: increase rack_u");
+    assert(z0 - lip_z(lip) >= 0, "unit sits too low for the panel lip below the aperture");
     assert(HOLE_CC / 2 - slot_w / 2 > reach + 1, "mounting slots collide with the shelf");
     assert(HOLE_CC / 2 - slot_w / 2 > reach + fillet_r + 1,
            "side wall fillets collide with the mounting slots: reduce fillet_r");
 
     echo(str("panel ", PANEL_W, " x ", panel_h, " x ", panel_t,
              " mm, shelf ", shelf_w, " x ", shelf_d, " x ", shelf_t,
-             " mm (bottom at z=", shelf_z0, "), aperture ", unit_w - 2 * lip, " x ", unit_h - 2 * lip,
+             " mm (bottom at z=", shelf_z0, "), aperture ", unit_w - 2 * lip_x(lip), " x ", unit_h - 2 * lip_z(lip),
              " mm, ", 2 * len(hole_zs(rack_u)), " mounting slots ", slot_w, " x ", bolt_clear, " mm",
              unit_x == 0 ? "" : str(", unit centred at x=", unit_x)));
 
     union() {
         rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra)
-            unit_aperture(unit, rack_u, lip, panel_t, unit_x);
+            unit_aperture(unit, rack_u, lip, panel_t, unit_x, unit_z);
         translate([unit_x, 0, 0]) {
             // shelf
             translate([-shelf_w / 2, panel_t, shelf_z0]) cube([shelf_w, shelf_d, shelf_t]);
@@ -148,10 +163,17 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0,
                     translate([shelf_w / 2, panel_t, wall_z0])
                         linear_extrude(z0 + wall_h - wall_z0) fillet_2d(fillet_r);
 
-            // rear stop
+            // rear stop, with cable gaps; a gap reaching the edge of the unit
+            // runs on to the side wall. The stop reaches 1 mm down into the
+            // shelf so the two always merge into one solid.
             if (rear_stop_h > 0)
-                translate([-inner_w / 2, panel_t + rear_clear + unit_d, z0])
-                    cube([inner_w, rear_stop_t, rear_stop_h]);
+                translate([-inner_w / 2, panel_t + rear_clear + unit_d, z0 - 1]) difference() {
+                    cube([inner_w, rear_stop_t, rear_stop_h + 1]);
+                    for (g = rear_stop_gaps)
+                        let(x1 = g[0] <= 0 ? -1 : side_clear + g[0],
+                            x2 = g[1] >= unit_w ? inner_w + 1 : side_clear + g[1])
+                            translate([x1, -1, 1]) cube([x2 - x1, rear_stop_t + 2, rear_stop_h + 1]);
+                }
         }
     }
 }
@@ -162,6 +184,34 @@ module fillet_2d(r, overlap = 0.01) {
     translate([-overlap, -overlap]) difference() {
         square(r + overlap);
         translate([r + overlap, r + overlap]) circle(r = r);
+    }
+}
+
+// ------------------------------------------------------------ cable tie bridge
+// A bridge on the outside of a wall for a cable tie: a bar parallel to the
+// wall, standing a tie's thickness off it on two legs. The tie passes between
+// bar and wall (along Z) and around a cable lying against the outside of the
+// bar, so the cable is held along the wall without anything getting between
+// the wall and the equipment on its other side.
+//
+// Frame: the wall face is the plane x = 0 with the wall at x > 0; the bridge
+// grows towards -x and is centred on y = 0 and z = 0.
+//
+//   tie        [width, thickness] of the cable tie
+//   clear      the slot is this much wider than the tie, in both directions
+//   bar_t      bar thickness (how far the bar stands proud of the slot)
+//   leg_t      length of each leg along Y
+//   h          height along Z
+function tie_bridge_size(tie = [4.8, 1.5], clear = 0.6, bar_t = 3, leg_t = 3, h = 8) =
+    [tie[1] + clear + bar_t, tie[0] + 2 * clear + 2 * leg_t, h];   // x reach, y length, z height
+
+module tie_bridge(tie = [4.8, 1.5], clear = 0.6, bar_t = 3, leg_t = 3, h = 8, overlap = 0.01) {
+    gap  = tie[1] + clear;
+    slot = tie[0] + 2 * clear;
+    size = tie_bridge_size(tie, clear, bar_t, leg_t, h);
+    translate([-size[0], -size[1] / 2, -h / 2]) difference() {
+        cube([size[0] + overlap, size[1], h]);
+        translate([bar_t, leg_t, -1]) cube([gap + overlap + 1, slot, h + 2]);
     }
 }
 

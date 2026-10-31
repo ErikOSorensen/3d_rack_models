@@ -24,6 +24,13 @@ in my homemade racks:
 - Ideally, width of the shelf holding equipment on the back of the front will be 10mm narrower than the standard allows (because of the woodwork lacking precision).
 
 
+`shelf_bracket()` in `lib/rack10.scad` builds these. Beyond the basics it can
+move the unit sideways (`unit_x`) or set how high it sits (`unit_z`, default
+centred), use a different lip at the sides and the top/bottom of the aperture
+(`lip = [sides, top/bottom]`), cut windows in the fins for vents (`vents`) and
+gaps in the rear lip for cables (`rear_stop_gaps`). The USB hub bracket in
+[tplink_usb_hub](tplink_usb_hub/USB_hub.md) uses most of these.
+
 # Connector panels
 
 `connector_panel()` in `lib/rack10.scad` makes a plain rack panel with a row of
@@ -39,3 +46,11 @@ down into the plate. The library also has the Raspberry Pi 3 B board outline and
 hole positions (`RPI3_*`). The miniSMU bracket in
 [undalogic_miniSMU](undalogic_miniSMU/miniSMU.md) uses them. A device file that
 needs the library's constants must `include` it, not `use` it.
+
+# Cable tie bridges
+
+`tie_bridge()` in `lib/rack10.scad` makes a small bridge on the outside of a
+wall for a cable tie: the tie passes between the bridge's bar and the wall and
+around a cable on the outside, so the cable runs along the wall without anything
+getting between the wall and the equipment. The hEX PoE bracket in
+[mikrotik_hEX_PoE](mikrotik_hEX_PoE/hEX_PoE.md) uses them for the power cable.
