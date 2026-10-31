@@ -14,7 +14,7 @@
 use <../lib/rack10.scad>
 
 /* [GS308] */
-unit_w = 153;
+unit_w = 158;
 unit_h = 26;
 unit_d = 101;
 vent_front = 45;            // ventilation holes start, measured from the front
@@ -23,7 +23,7 @@ vent_h = 12;                // ventilation holes height, vertically centred
 
 /* [Bracket] */
 rack_u = 1;
-lip = 1;                    // panel overlaps the switch by this much on each side
+lip = 2;                    // panel overlaps the switch by this much on each side
 side_clear = 0.75;          // clearance between switch and each side wall
 rear_clear = 1.0;           // clearance between switch and the rear stop
 shelf_t = 4;                // shelf thickness
@@ -31,7 +31,7 @@ wall_t = 4;                 // side wall thickness
 wall_above_shelf = 24;      // side wall height above the shelf top
 wall_bottom = 0.5;          // side walls extend down to this z (stiffens the shelf)
 vent_margin = 1.5;          // vent window is this much bigger than the vent, all round
-fillet_r = 25;               // fillet between the outside of each side wall and the panel (0: none)
+fillet_r = 20;               // fillet between the outside of each side wall and the panel (0: none)
 rear_stop_t = 3;            // rear lip thickness
 rear_stop_h = 5;            // rear lip height above the shelf (0 for none)
 
