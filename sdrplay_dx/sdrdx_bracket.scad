@@ -22,7 +22,7 @@ use <../lib/rack10.scad>
 
 /* [RSPdx] */
 unit_w = 94;                // connector face, becomes the front
-unit_d = 113;               // datasheet; SDRdx spec says 133 - measure!
+unit_d = 133;               // datasheet; SDRdx spec says 133 - measure!
 unit_h = 35;
 
 /* [Bracket] */

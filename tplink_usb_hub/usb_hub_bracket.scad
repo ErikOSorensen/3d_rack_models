@@ -28,7 +28,7 @@ button_y = 20;              // power button, from the front face of the hub (TOD
 
 /* [Bracket] */
 rack_u = 1;
-lip_z = 1;                  // panel overlaps the hub by this much at the top and bottom
+lip_z = 2;                  // panel overlaps the hub by this much at the top and bottom
 side_clear = 0.75;          // clearance between hub and each side wall
 rear_clear = 1.0;           // clearance between hub and the rear stop
 shelf_t = 4;                // shelf thickness; the shelf sits on the panel bottom
@@ -38,7 +38,7 @@ wall_bottom = 0.5;          // side walls extend down to this z (stiffens the sh
 fillet_r = 20;              // fillet between the outside of each side wall and the panel
                             // (0: none); max ~24 before it reaches the mounting slots
 rear_stop_t = 3;            // rear lip thickness
-rear_stop_h = 5;            // rear lip height above the shelf (0 for none)
+rear_stop_h = 7;            // rear lip height above the shelf (0 for none)
 
 /* [Power button access] */
 button_hole_d = 13;         // hole in the panel above the hub, for a pencil (0: none);

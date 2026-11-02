@@ -14,7 +14,7 @@
 use <../lib/rack10.scad>
 
 /* [GS308] */
-unit_w = 158.5;
+unit_w = 158;
 unit_h = 26;
 unit_d = 101;
 vent_front = 45;            // ventilation holes start, measured from the front
