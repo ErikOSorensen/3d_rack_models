@@ -265,6 +265,13 @@ module tie_down_shelf(rack_u = 1, depth = 120, shelf_w = undef, shelf_t = 4, wal
              open_w, " x ", panel_h - shelf_t - front_lip_h, " mm, fillets ", root_fillet,
              " mm at the floor root, ", fin_fillet, " mm fin/panel, ", fin_floor_fillet, " mm fin/floor"));
 
+    // A fin's side profile (depth along Y, height along Z) as a slab of
+    // thickness t growing in +X from the origin; it starts 1 mm inside the panel.
+    module fin_slab(t)
+        translate([0, panel_t - 1, 0]) rotate([90, 0, 90]) linear_extrude(t)
+            polygon([[0, 0], [floor_d + 1, 0], [floor_d + 1, shelf_t + fin_rear_h],
+                     [1, shelf_t + ffh], [0, shelf_t + ffh]]);
+
     union() {
         // panel, open above the front lip between the strips that back the fin fillets
         rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra)
@@ -278,18 +285,20 @@ module tie_down_shelf(rack_u = 1, depth = 120, shelf_w = undef, shelf_t = 4, wal
         }
         // tapered fins, reaching 1 mm into the panel so the parts merge
         for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
-            translate([inner_w / 2, panel_t - 1, 0]) rotate([90, 0, 90]) linear_extrude(wall_t)
-                polygon([[0, 0], [floor_d + 1, 0], [floor_d + 1, shelf_t + fin_rear_h],
-                         [1, shelf_t + ffh], [0, shelf_t + ffh]]);
+            translate([inner_w / 2, 0, 0]) fin_slab(wall_t);
         // fillet along the inside corner between the floor and the panel
         if (root_fillet > 0)
             translate([-inner_w / 2, panel_t, shelf_t]) rotate([90, 0, 90])
                 linear_extrude(inner_w) fillet_2d(root_fillet);
-        // fillets between the inside face of each fin and the panel
+        // fillets between the inside face of each fin and the panel, cut to the
+        // fin's taper so they slope down towards the back like the fin does
         if (fin_fillet > 0)
             for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
-                translate([-inner_w / 2, panel_t, shelf_t])
-                    linear_extrude(ffh) fillet_2d(fin_fillet);
+                intersection() {
+                    translate([-inner_w / 2, panel_t, shelf_t])
+                        linear_extrude(ffh) fillet_2d(fin_fillet);
+                    translate([-inner_w / 2, 0, 0]) fin_slab(fin_fillet + 0.1);
+                }
         // fillets along the inside corner between each fin and the floor
         if (fin_floor_fillet > 0)
             for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
