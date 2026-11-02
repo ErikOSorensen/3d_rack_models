@@ -6,9 +6,9 @@ It needs to fit in a 1U unit.
 
 The bracket should be centered on the 1U front, the front 
 
-- the unit is 133 x 94 x 35 mm.
-- The front aparture should have a 2mm lip to hold the unit. 
-- The shelf should have side fins and a stopper at the end.
+- the unit is 98 x 93 x 33 mm.
+- The front aparture should have a 4mm lip to hold the unit side and bottom, only a single mm on top.
+- The shelf should have side fins and a stopper at the end, but for cabling, the stopper should only be 20mm long on the left (seen from front from front) and 30mm on the right (seen from front). 
 - The datasheet is at https://www.sdr-kits.net/RSPdxDatasheetV1.0.pdf
 - The antenna ports should be at the front.
 

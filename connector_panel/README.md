@@ -14,8 +14,9 @@ three keystones on 1U) and the file to copy for a new panel.
 The panel follows the general rules in `../README.md`:
 
 - The panel is 5 mm thick, a whole number of U tall, and 254 mm (10") wide.
-- It has 4 + (U - 1) * 2 slots for M6 bolts. Each slot is 5 mm wider than the bolt
-  needs, to allow for the slack in the home-built racks.
+- It has 4 + (U - 1) * 2 slots for M6 bolts. Each slot is 10 mm wider than the bolt
+  needs, to allow for the slack in the home-built racks, and stays at least 3 mm from
+  the panel edge.
 
 The connector rules:
 
@@ -39,7 +40,7 @@ The connector rules:
     Neutriks, and about 4.5 mm with rear-mounted ones.
 - **Clear of the mounting bolts.** Connectors are kept 8 mm inside the inner end of
   the mounting slots (`edge_margin`), so washers and bolt heads have room. That
-  leaves about 209 mm of usable width.
+  leaves about 199 mm of usable width.
 - **Material between connectors.** There is at least 2 mm of material between
   neighbouring pockets (`min_web`).
 - **Inside the panel height.** Every pocket must fit inside the panel height with

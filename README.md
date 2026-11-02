@@ -20,16 +20,27 @@ in my homemade racks:
 
 - The front of the brackets will be 5 mm thick. 
 - If the module is X U tall, then there will be 4 + (X-1)*2 M6 mounting holes.
-- The mounting holes will be slots that are 5 mm horizontally wider than necessary for M6 bolts.
+- The mounting holes will be slots that are 10 mm horizontally wider than necessary for M6 bolts,
+  keeping at least 3 mm of material between the outer end of a slot and the panel edge (the
+  slot moves inwards from the rail hole if needed, so the bolt sits off centre in it).
 - Ideally, width of the shelf holding equipment on the back of the front will be 10mm narrower than the standard allows (because of the woodwork lacking precision).
 
 
 `shelf_bracket()` in `lib/rack10.scad` builds these. Beyond the basics it can
 move the unit sideways (`unit_x`) or set how high it sits (`unit_z`, default
 centred), use a different lip at the sides and the top/bottom of the aperture
-(`lip = [sides, top/bottom]`), cut windows in the fins for vents (`vents`) and
+(`lip = [sides, top/bottom]` or `[sides, bottom, top]`), cut windows in the fins for vents (`vents`) and
 gaps in the rear lip for cables (`rear_stop_gaps`). The USB hub bracket in
 [tplink_usb_hub](tplink_usb_hub/USB_hub.md) uses most of these.
+
+# Tie-down shelves
+
+`tie_down_shelf()` in `lib/rack10.scad` makes an open shelf for things that are
+strapped down rather than dropped in through an aperture: the panel is cut away
+between the side fins, the fins taper from full height at the panel towards the
+back, and the floor has a grid of holes for cable ties. The power supply shelf in
+[psu_shelf](psu_shelf/PSU_shelf.md) is one, for the power bricks at the back of
+the rack.
 
 # Connector panels
 

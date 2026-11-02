@@ -30,8 +30,8 @@ shelf_t = 4;                // shelf thickness
 wall_t = 4;                 // side wall thickness
 wall_above_shelf = 40;      // side wall height above the shelf top
 wall_bottom = 0.5;          // side walls extend down to this z (stiffens the shelf)
-fillet_r = 15;              // fillet between the outside of each side wall and the panel
-                            // (0: none); max ~18 before it reaches the mounting slots
+fillet_r = 13;              // fillet between the outside of each side wall and the panel
+                            // (0: none); max ~13 before it reaches the mounting slots
 rear_stop_t = 3;            // rear lip thickness
 rear_stop_h = 5;            // rear lip height above the shelf (0 for none)
 

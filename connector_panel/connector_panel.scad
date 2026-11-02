@@ -1,7 +1,7 @@
 // 1U connector panel for a 10" benchtop rack: four Neutrik D-size connectors
 // and three keystone jacks in one row. Geometry comes from ../lib/rack10.scad.
 //
-//   * 5 mm front panel, one U tall, M6 slots 5 mm wider than needed.
+//   * 5 mm front panel, one U tall, M6 slots 10 mm wider than needed.
 //   * The connectors are made for thin panels, so the panel is pocketed from
 //     the back: down to `skin` at Neutrik D connectors, to a 1.5 mm lip at
 //     keystones.

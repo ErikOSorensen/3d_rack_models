@@ -77,7 +77,7 @@ pi_x0     = -total_w / 2 + smu_w;                     // Pi shelf, miniSMU side
 pi_x1     = total_w / 2;                              // Pi shelf, outer edge
 pi_d      = max(smu_d, pi_front_clear + RPI3_BOARD[0]);
 pi_wall_z0 = max(wall_bottom, shelf_z0);
-slot_inner = HOLE_CC / 2 - (6.6 + 5) / 2;             // inner end of the default mounting slots
+slot_inner = slot_inner_x();                           // inner end of the default mounting slots
 
 // The board is turned 90 degrees, USB/Ethernet end to the rear. In the Pi
 // shelf's own frame (corner at the front, miniSMU side), board x runs along the

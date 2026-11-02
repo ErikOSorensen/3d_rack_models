@@ -41,7 +41,7 @@ wall_above_shelf = 27;      // side wall height above the shelf top
 wall_bottom = 0.5;          // side walls extend down to this z (stiffens the shelf)
 vent_margin = 1.5;          // vent window is this much bigger than the vent, all round
 fillet_r = 25;              // fillet between the outside of each side wall and the panel
-                            // (0: none); max ~38 before it reaches the mounting slots
+                            // (0: none); max ~33 before it reaches the mounting slots
 rear_stop_t = 3;            // rear lip thickness
 rear_stop_h = 5;            // rear lip height above the shelf (0 for none)
 
@@ -67,7 +67,7 @@ shelf_w  = unit_w + 2 * side_clear + 2 * wall_t;
 shelf_d  = rear_clear + unit_d + 3;                  // rear_stop_t = 3
 z0       = unit_z0(unit_h, rack_u);
 hole_z   = panel_h / 2;
-slot_in  = HOLE_CC / 2 - (6.6 + 5) / 2;              // inner edge of the mounting slots
+slot_in  = slot_inner_x();                           // inner edge of the mounting slots
 bridge   = tie_bridge_size([tie_w, tie_t], h = tie_bridge_h);
 
 assert(power_hole_d == 0 || abs(power_hole_x) + power_hole_d / 2 + 6 <= slot_in,

@@ -16,6 +16,9 @@ HOLE_CC      = 236.525;  // horizontal distance between rail hole centres (9.312
 HOLE_EDGE    = 6.35;     // rail hole centre measured from the U boundary
 RAIL_OPENING = 222.25;   // clear width between the rails (8.75")
 SHELF_MARGIN = 10;       // a shelf must be at least this much narrower than RAIL_OPENING
+BOLT_CLEAR   = 6.6;      // clearance hole diameter for the M6 mounting bolts
+SLOT_EXTRA   = 10;       // mounting slots are this much wider than BOLT_CLEAR, for rack slack
+SLOT_EDGE    = 3;        // minimum panel material between a slot's outer end and the panel edge
 
 function panel_height(rack_u) = rack_u * U_PITCH - PANEL_GAP;
 
@@ -27,15 +30,25 @@ function hole_zs(rack_u) = [ for (z = concat(
         [for (i = [1 : 1 : rack_u - 1]) i * U_PITCH + HOLE_EDGE],
         [rack_u * U_PITCH - HOLE_EDGE])) z - PANEL_GAP / 2 ];
 
+// X of the centre of the right-hand mounting slots. They are centred on the rail
+// holes unless that would leave less than SLOT_EDGE of material at the panel
+// edge; then the slot keeps its width and moves inwards (the bolt then sits off
+// centre in the slot, with more room towards the middle of the panel).
+function slot_centre_x(slot_w) = min(HOLE_CC / 2, PANEL_W / 2 - SLOT_EDGE - slot_w / 2);
+// X of the inner end of the right-hand mounting slots (the left ones mirror it).
+function slot_inner_x(bolt_clear = BOLT_CLEAR, slot_extra = SLOT_EXTRA) =
+    slot_centre_x(bolt_clear + slot_extra) - (bolt_clear + slot_extra) / 2;
+
 // Z of the bottom of a unit of height unit_h, vertically centred on the panel.
 function unit_z0(unit_h, rack_u) = panel_height(rack_u) / 2 - unit_h / 2;
 // Z of the bottom of a unit: unit_z if given, otherwise centred.
 function unit_bottom(unit_h, rack_u, unit_z = undef) = is_undef(unit_z) ? unit_z0(unit_h, rack_u) : unit_z;
 
-// The panel lip around an aperture is either one number for all sides or
-// [sides, top/bottom].
-function lip_x(lip) = is_list(lip) ? lip[0] : lip;
-function lip_z(lip) = is_list(lip) ? lip[1] : lip;
+// The panel lip around an aperture is one number for all sides,
+// [sides, top/bottom] or [sides, bottom, top].
+function lip_x(lip)      = is_list(lip) ? lip[0] : lip;
+function lip_bottom(lip) = is_list(lip) ? lip[1] : lip;
+function lip_top(lip)    = is_list(lip) ? (len(lip) > 2 ? lip[2] : lip[1]) : lip;
 
 // ------------------------------------------------------------ front panel
 module rounded_rect(w, h, r) {
@@ -51,24 +64,25 @@ module mounting_slot(panel_t, bolt_clear, slot_extra) {
 
 // Full-width front panel with mounting slots. Children are subtracted
 // (use them for apertures).
-module rack_panel(rack_u = 1, panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_extra = 5) {
+module rack_panel(rack_u = 1, panel_t = 5, corner_r = 2, bolt_clear = BOLT_CLEAR, slot_extra = SLOT_EXTRA) {
     panel_h = panel_height(rack_u);
     difference() {
         translate([0, panel_t, 0]) rotate([90, 0, 0])
             linear_extrude(panel_t) rounded_rect(PANEL_W, panel_h, corner_r);
         for (z = hole_zs(rack_u), sx = [-1, 1])
-            translate([sx * HOLE_CC / 2, 0, z]) mounting_slot(panel_t, bolt_clear, slot_extra);
+            translate([sx * slot_centre_x(bolt_clear + slot_extra), 0, z]) mounting_slot(panel_t, bolt_clear, slot_extra);
         children();
     }
 }
 
 // Aperture for a unit resting on a shelf, `lip` smaller than the unit (one
-// number, or [sides, top/bottom]). unit_x moves the unit sideways from the
-// panel centre; unit_z is the bottom of the unit (default: vertically centred).
+// number, [sides, top/bottom] or [sides, bottom, top]). unit_x moves the unit
+// sideways from the panel centre; unit_z is the bottom of the unit (default:
+// vertically centred).
 module unit_aperture(unit, rack_u = 1, lip = 1, panel_t = 5, unit_x = 0, unit_z = undef) {
     ap_w = unit[0] - 2 * lip_x(lip);
-    ap_h = unit[2] - 2 * lip_z(lip);
-    translate([unit_x - ap_w / 2, -1, unit_bottom(unit[2], rack_u, unit_z) + lip_z(lip)])
+    ap_h = unit[2] - lip_bottom(lip) - lip_top(lip);
+    translate([unit_x - ap_w / 2, -1, unit_bottom(unit[2], rack_u, unit_z) + lip_bottom(lip)])
         cube([ap_w, panel_t + 2, ap_h]);
 }
 
@@ -88,7 +102,7 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0, unit_z = undef) {
 //   unit_z          bottom of the unit above the panel bottom (default: the
 //                   unit is vertically centred on the panel)
 //   lip             panel overlaps the unit by this much on every side, or
-//                   [sides, top/bottom]
+//                   [sides, top/bottom] or [sides, bottom, top]
 //   side_clear      clearance between unit and each side wall
 //   rear_clear      clearance between unit and the rear stop
 //   shelf_t         shelf thickness
@@ -109,7 +123,7 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
                      shelf_t = 4, wall_t = 4, wall_above_shelf = undef, wall_bottom = 0.5,
                      rear_stop_t = 3, rear_stop_h = 5, rear_stop_gaps = [],
                      vents = [], vent_margin = 1.5, fillet_r = 8,
-                     panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_extra = 5) {
+                     panel_t = 5, corner_r = 2, bolt_clear = BOLT_CLEAR, slot_extra = SLOT_EXTRA) {
     unit_w = unit[0]; unit_d = unit[1]; unit_h = unit[2];
     panel_h  = panel_height(rack_u);
     z0       = unit_bottom(unit_h, rack_u, unit_z); // shelf top = bottom of the unit
@@ -120,21 +134,22 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
     wall_h   = is_undef(wall_above_shelf) ? unit_h - 2 : wall_above_shelf;
     wall_z0  = max(wall_bottom, shelf_z0);
     slot_w   = bolt_clear + slot_extra;
+    slot_in  = slot_inner_x(bolt_clear, slot_extra); // inner end of the mounting slots
     reach    = abs(unit_x) + shelf_w / 2;          // outermost edge of the shelf
 
     assert(2 * reach <= RAIL_OPENING - SHELF_MARGIN,
            str("shelf is too wide or too far off centre: reaches x = ", reach,
                " > ", (RAIL_OPENING - SHELF_MARGIN) / 2));
     assert(shelf_z0 >= 0, str("shelf does not fit under the unit (", shelf_z0, "): increase rack_u or reduce shelf_t"));
-    assert(z0 + unit_h + lip_z(lip) <= panel_h, "unit too tall for the panel: increase rack_u");
-    assert(z0 - lip_z(lip) >= 0, "unit sits too low for the panel lip below the aperture");
-    assert(HOLE_CC / 2 - slot_w / 2 > reach + 1, "mounting slots collide with the shelf");
-    assert(HOLE_CC / 2 - slot_w / 2 > reach + fillet_r + 1,
+    assert(z0 + unit_h + lip_top(lip) <= panel_h, "unit too tall for the panel: increase rack_u");
+    assert(z0 - lip_bottom(lip) >= 0, "unit sits too low for the panel lip below the aperture");
+    assert(slot_in > reach + 1, "mounting slots collide with the shelf");
+    assert(slot_in > reach + fillet_r + 1,
            "side wall fillets collide with the mounting slots: reduce fillet_r");
 
     echo(str("panel ", PANEL_W, " x ", panel_h, " x ", panel_t,
              " mm, shelf ", shelf_w, " x ", shelf_d, " x ", shelf_t,
-             " mm (bottom at z=", shelf_z0, "), aperture ", unit_w - 2 * lip_x(lip), " x ", unit_h - 2 * lip_z(lip),
+             " mm (bottom at z=", shelf_z0, "), aperture ", unit_w - 2 * lip_x(lip), " x ", unit_h - lip_bottom(lip) - lip_top(lip),
              " mm, ", 2 * len(hole_zs(rack_u)), " mounting slots ", slot_w, " x ", bolt_clear, " mm",
              unit_x == 0 ? "" : str(", unit centred at x=", unit_x)));
 
@@ -175,6 +190,111 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
                             translate([x1, -1, 1]) cube([x2 - x1, rear_stop_t + 2, rear_stop_h + 1]);
                 }
         }
+    }
+}
+
+// ------------------------------------------------------------ tie-down shelf
+// An open shelf for things that are strapped down rather than dropped in
+// through an aperture: power bricks, cable coils. The panel is cut away between
+// the side fins above a low front lip, so the shelf is open at the front. The
+// fins are full panel height at the panel and taper in a straight line down to
+// fin_rear_h at the back, working as gussets for the floor. The floor sits on
+// the panel bottom and has a grid of holes for cable ties.
+//
+//   depth        how far the shelf reaches back from the rail face (front of the panel)
+//   shelf_w      shelf width (default: as wide as the rails allow)
+//   shelf_t      floor thickness
+//   wall_t       fin thickness
+//   fin_rear_h   fin height above the floor at the back
+//   fin_front_h  fin height above the floor at the panel (default: up to the panel top)
+//   front_lip_h  the panel strip across the front stands this much above the floor
+//                (0: flush); at least root_fillet, so the fillet has panel behind it
+//   tie_hole     [x, y] size of each tie hole, with hole_r corner radius
+//   tie_pitch    [x, y] hole spacing; the grid is centred on the floor
+//   tie_margin   no hole comes closer than this to a fin, the panel or the rear edge
+//   root_fillet  radius of the concave fillet along the inside corner between the
+//                floor and the panel, between the fins (0: none)
+//   fin_fillet   radius of the concave fillets between the inside face of each fin
+//                and the panel, over the full fin height (0: none); a strip of
+//                panel this wide stays beside each fin to back the fillet
+//   fin_floor_fillet  radius of the concave fillets along the inside corner
+//                between each fin and the floor, front to back (0: none)
+// The fillets at the panel spread those joints over many layers when the part
+// is printed panel face down; the fin/floor fillets do the same floor down and
+// stiffen the fins either way.
+module tie_down_shelf(rack_u = 1, depth = 120, shelf_w = undef, shelf_t = 4, wall_t = 4,
+                      fin_rear_h = 10, fin_front_h = undef, front_lip_h = 4,
+                      tie_hole = [6, 6], tie_pitch = [15, 20], tie_margin = 6, hole_r = 1.5,
+                      root_fillet = 6, fin_fillet = 8, fin_floor_fillet = 4,
+                      panel_t = 5, corner_r = 2, bolt_clear = BOLT_CLEAR, slot_extra = SLOT_EXTRA) {
+    panel_h = panel_height(rack_u);
+    w       = is_undef(shelf_w) ? RAIL_OPENING - SHELF_MARGIN : shelf_w;
+    inner_w = w - 2 * wall_t;
+    floor_d = depth - panel_t;                     // floor behind the panel
+    ffh     = is_undef(fin_front_h) ? panel_h - shelf_t : fin_front_h;
+    slot_in = slot_inner_x(bolt_clear, slot_extra);
+    front_m = max(tie_margin, root_fillet + 1);    // hole margin behind the panel, clear of the root fillet
+    side_m  = max(tie_margin, fin_floor_fillet + 1); // hole margin from the fins, clear of their fillets
+    hole_d  = floor_d - front_m - tie_margin;      // floor depth available for holes
+    open_w  = inner_w - 2 * fin_fillet;            // width of the opening in the panel
+    nx      = max(0, floor((inner_w - 2 * side_m - tie_hole[0]) / tie_pitch[0]) + 1);
+    ny      = max(0, floor((hole_d - tie_hole[1]) / tie_pitch[1]) + 1);
+    hole_xs = [for (i = [0 : 1 : nx - 1]) (i - (nx - 1) / 2) * tie_pitch[0]];
+    hole_ys = [for (j = [0 : 1 : ny - 1]) panel_t + front_m + hole_d / 2 + (j - (ny - 1) / 2) * tie_pitch[1]];
+
+    assert(w <= RAIL_OPENING - SHELF_MARGIN,
+           str("shelf too wide: ", w, " > ", RAIL_OPENING - SHELF_MARGIN));
+    assert(slot_in > w / 2 + 1, "mounting slots collide with the side fins: reduce shelf_w");
+    assert(hole_d > 0, "shelf too shallow");
+    assert(root_fillet >= 0 && fin_fillet >= 0 && fin_floor_fillet >= 0, "fillet radii must not be negative");
+    assert(open_w > 0, "fin_fillet too large for the shelf width");
+    assert(root_fillet + 1 < floor_d && fin_fillet + 1 < floor_d, "fillets deeper than the floor");
+    assert(front_lip_h >= root_fillet,
+           str("front_lip_h (", front_lip_h, ") must be at least root_fillet (", root_fillet,
+               ") so the fillet has panel behind it"));
+    assert(2 * fin_floor_fillet < inner_w && fin_floor_fillet <= fin_rear_h,
+           "fin_floor_fillet too large for the shelf width or the fin height at the back");
+    assert(fin_rear_h >= 0 && fin_rear_h <= ffh, "fin_rear_h must be between 0 and the fin height at the panel");
+    assert(shelf_t + ffh <= panel_h, "fins taller than the panel: increase rack_u");
+    assert(shelf_t + front_lip_h <= panel_h, "front lip taller than the panel");
+    assert(hole_r * 2 <= min(tie_hole), "hole_r too large for tie_hole");
+
+    echo(str("tie-down shelf ", w, " x ", depth, " mm (", floor_d, " behind the panel) x ", shelf_t,
+             " mm, fins ", ffh, " -> ", fin_rear_h, " mm above the floor, ",
+             nx * ny, " tie holes ", tie_hole[0], " x ", tie_hole[1], " mm (", nx, " x ", ny, "), opening ",
+             open_w, " x ", panel_h - shelf_t - front_lip_h, " mm, fillets ", root_fillet,
+             " mm at the floor root, ", fin_fillet, " mm fin/panel, ", fin_floor_fillet, " mm fin/floor"));
+
+    union() {
+        // panel, open above the front lip between the strips that back the fin fillets
+        rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra)
+            translate([-open_w / 2, -1, shelf_t + front_lip_h]) cube([open_w, panel_t + 2, panel_h]);
+        // floor with tie holes
+        difference() {
+            translate([-w / 2, panel_t - 0.01, 0]) cube([w, floor_d + 0.01, shelf_t]);
+            for (x = hole_xs, y = hole_ys)
+                translate([x, y, -1]) linear_extrude(shelf_t + 2)
+                    offset(r = hole_r) offset(delta = -hole_r) square(tie_hole, center = true);
+        }
+        // tapered fins, reaching 1 mm into the panel so the parts merge
+        for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
+            translate([inner_w / 2, panel_t - 1, 0]) rotate([90, 0, 90]) linear_extrude(wall_t)
+                polygon([[0, 0], [floor_d + 1, 0], [floor_d + 1, shelf_t + fin_rear_h],
+                         [1, shelf_t + ffh], [0, shelf_t + ffh]]);
+        // fillet along the inside corner between the floor and the panel
+        if (root_fillet > 0)
+            translate([-inner_w / 2, panel_t, shelf_t]) rotate([90, 0, 90])
+                linear_extrude(inner_w) fillet_2d(root_fillet);
+        // fillets between the inside face of each fin and the panel
+        if (fin_fillet > 0)
+            for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
+                translate([-inner_w / 2, panel_t, shelf_t])
+                    linear_extrude(ffh) fillet_2d(fin_fillet);
+        // fillets along the inside corner between each fin and the floor
+        if (fin_floor_fillet > 0)
+            for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])
+                translate([-inner_w / 2, panel_t + floor_d, shelf_t]) rotate([90, 0, 0])
+                    linear_extrude(floor_d) fillet_2d(fin_floor_fillet);
     }
 }
 
@@ -369,10 +489,10 @@ function connector_xs(types, usable, spacing = undef) =
 module connector_panel(connectors, rack_u = 1, spacing = undef, positions = undef, z = undef,
                        skin = 2, edge_margin = 8, min_web = 2,
                        stiffeners = "both", stiffener_t = 3, stiffener_depth = 12, stiffener_fillet = 1.5,
-                       panel_t = 5, corner_r = 2, bolt_clear = 6.6, slot_extra = 5) {
+                       panel_t = 5, corner_r = 2, bolt_clear = BOLT_CLEAR, slot_extra = SLOT_EXTRA) {
     panel_h = panel_height(rack_u);
     slot_w  = bolt_clear + slot_extra;
-    usable  = 2 * (HOLE_CC / 2 - slot_w / 2 - edge_margin);
+    usable  = 2 * (slot_inner_x(bolt_clear, slot_extra) - edge_margin);
     row_z   = is_undef(z) ? panel_h / 2 : z;
     xs      = connector_xs(connectors, usable, spacing);
     pos     = is_undef(positions) ? [for (x = xs) [x, row_z]] : positions;

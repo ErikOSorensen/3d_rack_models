@@ -1,7 +1,7 @@
 // Mounting bracket for a Netgear GS308 in a 10" benchtop rack, 1U.
 // Geometry comes from ../lib/rack10.scad; this file only holds the GS308 numbers.
 //
-//   * 5 mm front panel, one U tall, M6 slots 5 mm wider than needed.
+//   * 5 mm front panel, one U tall, M6 slots 10 mm wider than needed.
 //   * Aperture 1 mm smaller than the switch on every side.
 //   * Shelf with side fins; the fins have a window where the GS308 has its
 //     ventilation holes (45..90 mm from the front, vertically centred, 12 mm tall).
