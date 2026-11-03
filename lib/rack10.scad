@@ -116,6 +116,14 @@ module unit_ghost(unit, rack_u = 1, panel_t = 5, unit_x = 0, unit_z = undef) {
 //   vents           [[y_from, y_to, z_centre, height], ...] openings in the side
 //                   walls, in unit coordinates (from its front face / bottom)
 //   vent_margin     vent openings are this much larger than listed, all round
+//   tracks          [[x_centre, width], ...] front-to-back tracks in the shelf
+//                   top for the unit's feet, x measured from the centre of the
+//                   unit; each runs from the back of the panel to the rear stop
+//   track_depth     depth of the tracks below the shelf top; equal to the feet
+//                   height, the unit's body rests on the shelf with the feet
+//                   just reaching the track floor
+//   track_floor_t   a track deeper than the shelf allows gets a channel hanging
+//   track_wall_t    under the shelf, with this floor and wall thickness
 //   fillet_r        radius of the solid fillets joining the outside face of each
 //                   side wall to the back of the panel (0: none)
 module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
@@ -123,6 +131,7 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
                      shelf_t = 4, wall_t = 4, wall_above_shelf = undef, wall_bottom = 0.5,
                      rear_stop_t = 3, rear_stop_h = 5, rear_stop_gaps = [],
                      vents = [], vent_margin = 1.5, fillet_r = 8,
+                     tracks = [], track_depth = 6, track_floor_t = 3, track_wall_t = 2,
                      panel_t = 5, corner_r = 2, bolt_clear = BOLT_CLEAR, slot_extra = SLOT_EXTRA) {
     unit_w = unit[0]; unit_d = unit[1]; unit_h = unit[2];
     panel_h  = panel_height(rack_u);
@@ -136,6 +145,8 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
     slot_w   = bolt_clear + slot_extra;
     slot_in  = slot_inner_x(bolt_clear, slot_extra); // inner end of the mounting slots
     reach    = abs(unit_x) + shelf_w / 2;          // outermost edge of the shelf
+    track_z0 = z0 - track_depth;                   // track floor
+    chan_z0  = track_z0 - track_floor_t;           // bottom of a track channel under the shelf
 
     assert(2 * reach <= RAIL_OPENING - SHELF_MARGIN,
            str("shelf is too wide or too far off centre: reaches x = ", reach,
@@ -146,6 +157,12 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
     assert(slot_in > reach + 1, "mounting slots collide with the shelf");
     assert(slot_in > reach + fillet_r + 1,
            "side wall fillets collide with the mounting slots: reduce fillet_r");
+    for (t = tracks) {
+        assert(abs(t[0]) + t[1] / 2 + track_wall_t <= inner_w / 2,
+               str("track at x=", t[0], " runs into a side wall"));
+        assert(chan_z0 >= 0 || track_z0 - shelf_z0 >= track_floor_t,
+               str("track at x=", t[0], " goes below the panel bottom: reduce track_depth"));
+    }
 
     echo(str("panel ", PANEL_W, " x ", panel_h, " x ", panel_t,
              " mm, shelf ", shelf_w, " x ", shelf_d, " x ", shelf_t,
@@ -157,8 +174,20 @@ module shelf_bracket(unit, rack_u = 1, lip = 1, unit_x = 0, unit_z = undef,
         rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra)
             unit_aperture(unit, rack_u, lip, panel_t, unit_x, unit_z);
         translate([unit_x, 0, 0]) {
-            // shelf
-            translate([-shelf_w / 2, panel_t, shelf_z0]) cube([shelf_w, shelf_d, shelf_t]);
+            // shelf, with front-to-back tracks for the unit's feet. Where a
+            // track would go through the shelf it gets a channel hanging
+            // under the shelf instead, which also stiffens the shelf.
+            difference() {
+                union() {
+                    translate([-shelf_w / 2, panel_t, shelf_z0]) cube([shelf_w, shelf_d, shelf_t]);
+                    for (t = tracks) if (chan_z0 < shelf_z0)
+                        translate([t[0] - t[1] / 2 - track_wall_t, panel_t, chan_z0])
+                            cube([t[1] + 2 * track_wall_t, shelf_d, shelf_z0 - chan_z0 + 1]);
+                }
+                for (t = tracks)
+                    translate([t[0] - t[1] / 2, panel_t - 1, track_z0])
+                        cube([t[1], 1 + rear_clear + unit_d, track_depth + 1]);
+            }
 
             // side walls with vent windows
             for (s = [-1, 1]) mirror([s < 0 ? 1 : 0, 0, 0])

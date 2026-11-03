@@ -29,8 +29,10 @@ in my homemade racks:
 `shelf_bracket()` in `lib/rack10.scad` builds these. Beyond the basics it can
 move the unit sideways (`unit_x`) or set how high it sits (`unit_z`, default
 centred), use a different lip at the sides and the top/bottom of the aperture
-(`lip = [sides, top/bottom]` or `[sides, bottom, top]`), cut windows in the fins for vents (`vents`) and
-gaps in the rear lip for cables (`rear_stop_gaps`). The USB hub bracket in
+(`lip = [sides, top/bottom]` or `[sides, bottom, top]`), cut windows in the fins for vents (`vents`),
+gaps in the rear lip for cables (`rear_stop_gaps`) and front-to-back tracks in the shelf for
+the unit's rubber feet (`tracks`; a track deeper than the shelf becomes a channel under it,
+as in [quantasylum_QA403](quantasylum_QA403/QA403.md)). The USB hub bracket in
 [tplink_usb_hub](tplink_usb_hub/USB_hub.md) uses most of these.
 
 # Tie-down shelves
