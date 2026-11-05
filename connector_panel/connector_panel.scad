@@ -2,9 +2,8 @@
 // and three keystone jacks in one row. Geometry comes from ../lib/rack10.scad.
 //
 //   * 5 mm front panel, one U tall, M6 slots 10 mm wider than needed.
-//   * The connectors are made for thin panels, so the panel is pocketed from
-//     the back: down to `skin` at Neutrik D connectors, to a 1.5 mm lip at
-//     keystones.
+//   * The Neutrik connectors are made for thin panels, so the panel is
+//     pocketed from the back down to `skin` behind them.
 //   * Neutrik D: 24 mm hole, M3 holes on all four corners of the 19 x 24 mm
 //     pattern. "neutrik_d_rear": the flange sits in a snug pocket behind the
 //     panel and countersunk M3 x 6 screws from the front go into the threaded
@@ -12,12 +11,14 @@
 //     flange on the front, M3 x 8 screws and nuts.
 //   * Lips (3 x 12 mm) along the top and bottom edge on the back turn the panel
 //     into a stiff channel; they stop short of the rails.
-//   * Keystone: 14.9 x 15.9 mm opening with the hook/clip cavity behind it
-//     (profile from printables.com/model/187565, CC BY). Insert the jack from
-//     the front, hook at the bottom first, then press the clip side in.
+//   * Keystone: 15 x 16 mm opening in a 3 mm plate, a cavity behind it where
+//     the hook and latch lock, and a box on the back of the panel (19 x 28.3 mm,
+//     9.5 mm from the front face) with a stop lip that the jack's body rests
+//     against (profile from printables.com/model/1088263). Insert the jack
+//     from the front, hook at the bottom first, then press the latch side in.
 //
-// Set test_coupon = true and print that first to check the fit of both
-// connector types; the opening sizes are constants in ../lib/rack10.scad.
+// Set test_coupon = "connectors" and print that first to check the fit of
+// both connector types; the sizes are constants in ../lib/rack10.scad.
 //
 // Print with the front panel face down on the bed (print_orientation = true).
 
@@ -40,12 +41,14 @@ rack_u = 1;
 
 /* [Rendering] */
 print_orientation = false;  // true: lay the panel with the front on the bed
-test_coupon = false;        // true: only a small plate with one of each type
+test_coupon = "none";       // [none, connectors, keystone_depths] print a small plate instead: one of each connector type, or keystones with stop lips at 7.5, 8 and 8.5 mm
 $fn = 64;
 
 print_oriented(print_orientation) {
-    if (test_coupon)
+    if (test_coupon == "connectors")
         connector_test_coupon(["neutrik_d_rear", "keystone"], skin = skin);
+    else if (test_coupon == "keystone_depths")
+        keystone_test_coupon();
     else
         connector_panel(connectors, rack_u = rack_u,
                         spacing = spacing < 0 ? undef : spacing, skin = skin,

@@ -22,13 +22,19 @@ The panel follows the general rules in `../README.md`:
 
 The connector rules:
 
-- **Thin where the connectors are.** Both connector types are made for sheet-metal
+- **Thin where the Neutriks are.** Neutrik D connectors are made for sheet-metal
   panels about 1-3 mm thick, so a 5 mm panel cannot hold them as it is. Behind each
-  connector the panel is thinned from the back with a pocket:
-  - Neutrik D: down to `skin`, 2 mm by default.
-  - Keystone: down to a 1.52 mm lip.
-
-  The rest of the panel stays 5 mm thick.
+  one the panel is thinned from the back with a pocket down to `skin`, 2 mm by
+  default. The rest of the panel stays 5 mm thick.
+- **A box behind each keystone.** A keystone jack locks with a hook and a latch
+  that sit 5-8 mm behind its face, and its body widens behind the nose. The jack
+  goes in through a 3 mm front plate into a cavity where the hook and latch
+  spring out and lock behind the plate, and a thin lip at the back of the cavity
+  stops the body so the jack cannot be pushed through. The cavity is 9.5 mm deep
+  from the front face, so each keystone gets a 19 x 28.3 mm box on the back of
+  the panel with 2 mm walls. The profile is copied from the
+  [10-inch Keystone Patchpanel x10 ports](https://www.printables.com/model/1088263)
+  by Mauricio Pessoa, which is known to work.
 - **Stiffening lips.** The panel is held only at its ends, 236 mm apart, and a
   cable pushed into it bends it front to back. Lips along the top and bottom edge
   on the back turn the panel into a shallow channel, roughly ten times stiffer.
@@ -58,7 +64,7 @@ The connector rules:
 |---|---|---|---|
 | `"neutrik_d_rear"` | 24 mm round hole, 4 countersunk M3 holes | 26.6 x 31.6 mm pocket that holds the flange square | Countersunk M3 x 6 from the front into the threaded holes of the **M3 versions** (e.g. NC3FDM3-L-1, NC3MDM3-L-1) |
 | `"neutrik_d"` | 24 mm round hole, 4 plain M3 holes | 28 x 34 mm pocket with room for nuts | Flange on the front face, M3 x 8 screws through the connector's holes, nuts behind |
-| `"keystone"` | 14.9 x 15.87 mm | 1.52 mm lip, sloped top edge, a cavity 2.6 mm below and 5.49 mm above the opening | Snaps in from the front |
+| `"keystone"` | 15 x 16 mm in a 3 mm plate, top edge ramped | 15 x 24.3 mm cavity 3-8 mm deep, a 1.5 mm stop lip with a 15 x 19.8 mm window behind it, all in a 19 x 28.3 mm box 4.5 mm proud of the panel back | Snaps in from the front, hook and latch behind the 3 mm plate |
 
 Notes on each type:
 
@@ -69,11 +75,12 @@ Notes on each type:
 - **Neutrik screw holes:** all four corners of the 19 x 24 mm screw pattern are
   drilled, so connectors with screws on either diagonal fit. With rear mounting,
   the two unused countersunk holes show on the front.
-- **Keystone:** the clip is at the top. Insert the jack hook-first at the bottom,
-  then press the top in until the clip snaps behind the lip. The profile is
-  measured from the cavity of
-  [Keystone Rj45 Jack v7](https://www.printables.com/model/187565) by snowboarder
-  (CC BY).
+- **Keystone:** the latch is at the top. Insert the jack hook-first at the bottom,
+  then press the top in until the latch snaps behind the plate; the ramp on the
+  top edge of the opening gives the latch room to swing in. Jacks vary a little
+  between makers; the stop lip is set for a body shoulder 8 mm behind the face,
+  which fits the jacks in the datasheets checked (8.1-8.4 mm). The keystone
+  depth coupon (below) prints the slot with the lip at 7.5, 8 and 8.5 mm.
 
 How many fit in one row on 1U (all of one type):
 
@@ -81,7 +88,7 @@ How many fit in one row on 1U (all of one type):
 |---|---|
 | `"neutrik_d_rear"` | 7 |
 | `"neutrik_d"` | 7 (needs `spacing = 2`; even spreading gives 6) |
-| `"keystone"` | 12 |
+| `"keystone"` | 9 |
 
 ## Making a panel
 
@@ -108,14 +115,20 @@ How many fit in one row on 1U (all of one type):
 - PETG, like the rest of the repo.
 - Print with the front face on the bed (`print_orientation = true`). The pockets
   then open upwards and the lips are plain vertical walls, so no supports are
-  needed. The 1.5-2 mm front skin is the first
-  layers, which gives the best surface where the connectors seat.
-- **Print the test piece first.** Set `test_coupon = true`: it prints a small plate
-  with one rear-mounted Neutrik and one keystone, quickly and with little
-  filament. Check that:
-  - the keystone snaps in firmly and comes out with the clip pressed;
+  needed. The 2 mm front skin at the Neutriks is the first layers, which gives
+  the best surface where the flange seats. The stop lip of each keystone box is
+  a 15 mm bridge over the cavity and the ramp overhangs at 50 degrees; both
+  print fine in PETG without support.
+- **Print the test pieces first.** Set `test_coupon = "connectors"`: it prints a
+  small plate with one rear-mounted Neutrik and one keystone, quickly and with
+  little filament. Check that:
+  - the keystone snaps in firmly, sits flush and comes out with the latch pressed;
   - the Neutrik flange drops into its pocket without play, and the screws line up
     with its holes.
+
+  If the keystone rattles or stands proud, print `test_coupon = "keystone_depths"`:
+  three keystone slots with the stop lip at 7.5, 8 and 8.5 mm (marked on the
+  front) and set `KEYSTONE_STOP` to the one that fits.
 
 ## Adjusting the fit
 
@@ -129,15 +142,21 @@ All connector sizes are named constants in the connector section of
   - `NEUTRIK_D_CSK_D`: the countersink size.
 - **Keystone:**
   - `KEYSTONE_W` and `KEYSTONE_FACE_H`: the opening.
-  - `KEYSTONE_LIP_T`: the thickness of the edge the jack locks behind.
-  - `KEYSTONE_HOOK` and `KEYSTONE_CLIP`: the room for the hook and the clip.
+  - `KEYSTONE_PLATE_T`: the front plate the hook and latch lock behind, and
+    `KEYSTONE_RAMP_D` the depth the ramp on its top edge reaches.
+  - `KEYSTONE_HOOK` and `KEYSTONE_CLIP`: the room in the cavity below and above
+    the opening for the hook and the latch.
+  - `KEYSTONE_STOP`, `KEYSTONE_STOP_T` and `KEYSTONE_WINDOW`: the depth and
+    thickness of the stop lip and how far its window reaches above the opening.
+  - `KEYSTONE_WALL`: the walls of the box.
 
 Things to measure before relying on the defaults:
 
 - **Neutrik screw spacing:** the 19 x 24 mm spacing is from memory and not
   confirmed by a datasheet. Measure a connector.
-- **Keystone size:** keystone sizes differ a little between makers. The profile
-  is a "best fit" for one maker's jacks.
+- **Keystone size:** keystone sizes differ a little between makers, mostly in
+  where the hook, latch and body shoulder sit behind the face. The depth coupon
+  is the quick way to find the right `KEYSTONE_STOP`.
 
 Change a constant, then print the test piece again before printing a whole panel.
 These constants are shared by every panel in the repo.

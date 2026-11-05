@@ -3,8 +3,10 @@
 // the miniSMU and Pi numbers and the layout of the two side by side.
 //
 //   * miniSMU on the left (seen from the front), BNC face forward through an
-//     aperture 1 mm smaller than the unit on every side. Shelf with side fins
-//     and a low rear lip, like the other brackets.
+//     aperture 8 mm narrower than the unit on each side and 1 mm smaller at the
+//     top and bottom. Shelf with side fins and a low rear lip, like the other
+//     brackets. The miniSMU has heatsinks along its sides and a blower fan in
+//     the middle, so each fin has a window in front of the heatsink.
 //   * Raspberry Pi on the right, behind solid panel, on short standoffs with
 //     holes for M2.5 heat-set inserts that go on down into the shelf. The Pi
 //     bridges Ethernet to the miniSMU's USB.
@@ -14,10 +16,11 @@
 //     outwards, towards the rail: a straight plug fits, with open space around
 //     it, and pi_power_gap of shelf beyond the socket.
 //   * A short wall at the outer front corner of the Pi shelf ties it to the
-//     panel; it ends well ahead of the power plug.
+//     panel; it ends ahead of the power plug.
 //
-// miniSMU measured: 126 long x 82 wide x 30 high mm, BNC face across the
-// 82 mm width.
+// miniSMU measured: 107 deep (screw head to screw head) x 82 wide x 28 high
+// mm, BNC face across the 82 mm width. A 5 mm rear lip clears the rear
+// connectors and antenna.
 //
 // Print with the front panel face down on the bed (print_orientation = true).
 // Press the inserts in with the bracket lying on its back.
@@ -27,22 +30,28 @@ include <../lib/rack10.scad>
 
 /* [miniSMU MS01] */
 unit_w = 82;                // BNC face, becomes the front
-unit_d = 126;
-unit_h = 30;
+unit_d = 107;               // between the screw heads front and back
+unit_h = 28;
+vent_len = 90;              // fin window length (front-to-back), one in each side fin
+vent_h = 15;                // fin window height
+vent_from_front = (unit_d - vent_len) / 2;   // window front edge from the unit's front face
+vent_bottom = (unit_h - vent_h) / 2;         // window bottom edge above the unit's bottom
+                            // (both centred: the heatsinks run along most of the side)
 
 /* [Bracket] */
 rack_u = 1;
-lip = 1;                    // panel overlaps the unit by this much on each side
+lip = [8, 1];               // panel overlaps the unit by 8 mm on each side, 1 mm top and bottom
 side_clear = 0.75;          // clearance between unit and each side wall
 rear_clear = 1.0;           // clearance between unit and the rear stop
 shelf_t = 4;                // shelf thickness (miniSMU and Pi shelf)
 wall_t = 4;                 // side wall thickness
-wall_above_shelf = 28;      // side wall height above the shelf top
+wall_above_shelf = 26;      // side wall height above the shelf top
 wall_bottom = 0.5;          // side walls extend down to this z (stiffens the shelf)
 fillet_r = 8;               // fillet between the outside of each side wall and the panel
 rear_stop_t = 3;            // rear lip thickness
-rear_stop_h = 5;            // rear lip height above the shelf (0 for none; lower it
-                            // if it gets in the way of the miniSMU's rear sockets)
+rear_stop_h = 5;            // rear lip height above the shelf (0 for none); 5 mm
+                            // clears the miniSMU's rear sockets and antenna
+vent_margin = 0;            // the fin windows are this much bigger than vent_len x vent_h, all round
 
 /* [Raspberry Pi] */
 pi_power_gap = 30;          // shelf beyond the Pi's power edge (the plug may also overhang it)
@@ -54,7 +63,8 @@ insert_d = 3.6;             // hole for an M2.5 heat-set insert: check the inser
 insert_depth = 6;           // hole depth from the standoff top (M2.5 x 5.7 inserts)
 pi_wall_t = 4;              // short wall at the outer front corner of the Pi shelf
 pi_wall_h = 10;             // its height above the shelf
-pi_wall_d = 30;             // its length back from the panel (0: none)
+pi_wall_d = 20;             // its length back from the panel (0: none); must end
+                            // ahead of the Pi's power plug (see the assert below)
 
 /* [Rendering] */
 print_orientation = false;  // true: lay the bracket with the front panel on the bed
@@ -95,6 +105,10 @@ assert(pi_x1 + fillet_r + 1 < slot_inner, "Pi wall fillet collides with the moun
 assert(pi_wall_d <= power_y - 10, str("Pi corner wall (", pi_wall_d,
        " mm) reaches the power plug (socket ", power_y, " mm behind the panel)"));
 assert(pi_top <= panel_height(rack_u), str("Pi too tall for the panel (top at z=", pi_top, ")"));
+assert(vent_bottom - vent_margin >= 2 && vent_bottom + vent_h + vent_margin <= wall_above_shelf - 2,
+       "fin window reaches the top or bottom edge of the side fin");
+assert(vent_from_front - vent_margin >= 2 && vent_from_front + vent_len + vent_margin <= unit_d - 2,
+       "fin window reaches the panel or the rear lip");
 
 echo(str("miniSMU at x=", unit_x, ", Pi shelf ", pi_area_w, " x ", pi_d,
          " mm, Pi standoffs ", standoff_h, " mm, Pi top at z=", pi_top,
@@ -108,6 +122,9 @@ print_oriented(print_orientation) {
                   shelf_t = shelf_t, wall_t = wall_t,
                   wall_above_shelf = wall_above_shelf, wall_bottom = wall_bottom,
                   rear_stop_t = rear_stop_t, rear_stop_h = rear_stop_h,
+                  vents = [[vent_from_front, vent_from_front + vent_len,
+                            vent_bottom + vent_h / 2, vent_h]],
+                  vent_margin = vent_margin,
                   fillet_r = fillet_r, panel_t = panel_t);
 
     // Pi shelf with standoffs, overlapping the miniSMU shelf slightly

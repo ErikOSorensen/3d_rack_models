@@ -3,7 +3,7 @@
 // Geometry comes from ../lib/rack10.scad; see README.md here for the design rules.
 //
 // Print with the front panel face down on the bed (print_orientation = true).
-// Set test_coupon = true and print that first to check the fit of both types.
+// Set test_coupon = "connectors" and print that first to check the fit of both types.
 
 use <../lib/rack10.scad>
 
@@ -24,12 +24,14 @@ rack_u = 1;
 
 /* [Rendering] */
 print_orientation = false;  // true: lay the panel with the front on the bed
-test_coupon = false;        // true: only a small plate with one of each type
+test_coupon = "none";       // [none, connectors, keystone_depths] print a small plate instead: one of each connector type, or keystones with stop lips at 7.5, 8 and 8.5 mm
 $fn = 64;
 
 print_oriented(print_orientation) {
-    if (test_coupon)
+    if (test_coupon == "connectors")
         connector_test_coupon(["neutrik_d_rear", "keystone"], skin = skin);
+    else if (test_coupon == "keystone_depths")
+        keystone_test_coupon();
     else
         connector_panel(connectors, rack_u = rack_u,
                         spacing = spacing < 0 ? undef : spacing, skin = skin,

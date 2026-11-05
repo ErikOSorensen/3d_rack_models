@@ -427,9 +427,10 @@ module rpi3_ghost() {
 
 // ------------------------------------------------------------ connector panels
 // Cut-outs for panel-mount connectors. Each cut is centred on the origin in X/Z
-// and runs through the panel along Y (front face at y = 0). The connectors are
-// made for thin sheet-metal panels, so behind each opening the panel is thinned
-// from the back: to `skin` mm for Neutrik D, to KEYSTONE_LIP_T for keystones.
+// and runs through the panel along Y (front face at y = 0). Neutrik D
+// connectors are made for thin sheet-metal panels, so behind each opening the
+// panel is thinned from the back to `skin` mm. Keystones need more depth than
+// the panel has, so they get a box on the back instead (connector_boss()).
 //
 // Neutrik D-size (XLR, speakON, etherCON, BNC, USB, ... in the D housing):
 // 24 mm round hole, M3 screws on a 19 x 24 mm pattern (drilled on all four
@@ -447,20 +448,33 @@ NEUTRIK_D_FLANGE    = [26, 31];
 NEUTRIK_D_POCKET    = [28, 34];       // front mount: flange + 1 mm, room for M3 nuts
 NEUTRIK_D_REAR_CLEAR = 0.3;           // rear mount: pocket = flange + this, each side
 NEUTRIK_D_CSK_D     = 6.5;            // rear mount: 90 degree countersink for M3 flat heads
-// Keystone jacks (RJ45, HDMI, USB, F, ... modules). Profile measured from the
-// cavity of "Keystone Rj45 Jack" v7 by snowboarder (CC BY,
-// https://www.printables.com/model/187565): a 1.5 mm front lip with the face
-// opening, a 45 degree chamfer behind the top edge so the clip can swing in,
-// and a cavity behind the lip that the hook (bottom) and clip (top) lock into.
-// The cut is centred on the face opening; the clip is at the top.
-KEYSTONE_W          = 14.9;           // opening and cavity width
-KEYSTONE_FACE_H     = 15.87;          // face opening height
-KEYSTONE_LIP_T      = 1.52;           // front lip the hook and clip catch behind
-KEYSTONE_CHAMFER    = 1.43;           // chamfer behind the top (clip) edge
-KEYSTONE_HOOK       = 2.6;            // cavity extends this far below the opening
-KEYSTONE_CLIP       = 5.49;           // cavity extends this far above the opening
-// symmetric envelope used for layout checks
-KEYSTONE_FOOTPRINT  = [KEYSTONE_W, KEYSTONE_FACE_H + 2 * max(KEYSTONE_HOOK, KEYSTONE_CLIP)];
+// Keystone jacks (RJ45, HDMI, USB, F, ... modules). The nose of a jack
+// (14.5 x 16 mm) is about 8.2 mm long; the fixed hook (bottom) and the sprung
+// latch (top) sit at its rear, 5.4-8.4 mm behind the face, and behind the nose
+// the body widens to about 17.5 x 19.4 mm. Profile measured from the
+// "10-inch Keystone Patchpanel x10 ports" by Mauricio Pessoa
+// (https://www.printables.com/model/1088263): the jack goes in through a 3 mm
+// front plate, whose top edge is ramped so the latch can swing in, into a
+// cavity where the hook and latch spring out and lock behind the plate. A thin
+// lip at the back of the cavity, with a window for the nose, stops the wider
+// body so the jack cannot be pushed through; the latch spring holds the jack
+// against it. The cavity reaches KEYSTONE_DEPTH behind the front face, so the
+// panel gets a box on its back around each keystone (connector_boss()).
+// The cut is centred on the face opening; the latch is at the top.
+KEYSTONE_W          = 15.0;           // face opening, cavity and window width
+KEYSTONE_FACE_H     = 16.0;           // face opening height
+KEYSTONE_PLATE_T    = 3.0;            // front plate the hook and latch lock behind
+KEYSTONE_RAMP_D     = 4.9;            // ramp from the top edge of the opening reaches the cavity top this deep
+KEYSTONE_HOOK       = 2.5;            // cavity extends this far below the opening
+KEYSTONE_CLIP       = 5.8;            // cavity extends this far above the opening
+KEYSTONE_STOP       = 8.0;            // depth of the stop lip at the back of the cavity
+KEYSTONE_STOP_T     = 1.5;            // thickness of the stop lip
+KEYSTONE_WINDOW     = 3.8;            // window in the stop lip extends this far above the opening (none below)
+KEYSTONE_WALL       = 2.0;            // walls of the box on the back of the panel
+KEYSTONE_DEPTH      = KEYSTONE_STOP + KEYSTONE_STOP_T;   // front face to the back of the box
+// outside of the box; symmetric envelope used for layout checks
+KEYSTONE_FOOTPRINT  = [KEYSTONE_W + 2 * KEYSTONE_WALL,
+                       KEYSTONE_FACE_H + 2 * (max(KEYSTONE_HOOK, KEYSTONE_CLIP) + KEYSTONE_WALL)];
 
 // [width, height] of the area a connector occupies on the back of the panel.
 function connector_footprint(type) =
@@ -468,7 +482,8 @@ function connector_footprint(type) =
     type == "neutrik_d_rear" ? NEUTRIK_D_FLANGE + 2 * [NEUTRIK_D_REAR_CLEAR, NEUTRIK_D_REAR_CLEAR] :
     type == "keystone"  ? KEYSTONE_FOOTPRINT : undef;
 
-module connector_cut(type, panel_t = 5, skin = 2) {
+// `keystone_stop` overrides KEYSTONE_STOP (see keystone_test_coupon()).
+module connector_cut(type, panel_t = 5, skin = 2, keystone_stop = KEYSTONE_STOP) {
     fp = connector_footprint(type);
     assert(!is_undef(fp), str("unknown connector type \"", type, "\" (use \"neutrik_d\", \"neutrik_d_rear\" or \"keystone\")"));
     // through opening
@@ -486,13 +501,31 @@ module connector_cut(type, panel_t = 5, skin = 2) {
         if (skin < panel_t)
             translate([-fp[0] / 2, skin, -fp[1] / 2]) cube([fp[0], panel_t - skin + 1, fp[1]]);
     } else if (type == "keystone") {
-        h = KEYSTONE_FACE_H / 2;
-        // profile in the Y-Z plane, extruded across the width
+        h    = KEYSTONE_FACE_H / 2;
+        stop = keystone_stop;
+        back = max(stop + KEYSTONE_STOP_T, panel_t) + 1;   // beyond the back of the box
+        // profile in the Y-Z plane (depth, height), extruded across the width:
+        // face opening, ramp, cavity, stop lip with its window
         rotate([90, 0, 90]) translate([0, 0, -KEYSTONE_W / 2]) linear_extrude(KEYSTONE_W)
-            polygon([[-1, -h], [-1, h], [KEYSTONE_LIP_T - KEYSTONE_CHAMFER, h],
-                     [KEYSTONE_LIP_T, h + KEYSTONE_CHAMFER], [KEYSTONE_LIP_T, h + KEYSTONE_CLIP],
-                     [panel_t + 1, h + KEYSTONE_CLIP], [panel_t + 1, -h - KEYSTONE_HOOK],
-                     [KEYSTONE_LIP_T, -h - KEYSTONE_HOOK], [KEYSTONE_LIP_T, -h]]);
+            polygon([[-1, -h], [-1, h], [0, h],
+                     [KEYSTONE_RAMP_D, h + KEYSTONE_CLIP], [stop, h + KEYSTONE_CLIP],
+                     [stop, h + KEYSTONE_WINDOW], [back, h + KEYSTONE_WINDOW],
+                     [back, -h], [stop, -h], [stop, -h - KEYSTONE_HOOK],
+                     [KEYSTONE_PLATE_T, -h - KEYSTONE_HOOK], [KEYSTONE_PLATE_T, -h]]);
+    }
+}
+
+// Material a connector adds on the back of the panel before its cut is made:
+// keystones get a box around the cavity when the panel is thinner than
+// KEYSTONE_DEPTH. Same origin as connector_cut().
+module connector_boss(type, panel_t = 5, keystone_stop = KEYSTONE_STOP) {
+    if (type == "keystone") {
+        depth = keystone_stop + KEYSTONE_STOP_T;
+        w     = KEYSTONE_W + 2 * KEYSTONE_WALL;
+        if (depth > panel_t)
+            translate([-w / 2, panel_t - 1, -KEYSTONE_FACE_H / 2 - KEYSTONE_HOOK - KEYSTONE_WALL])
+                cube([w, depth - panel_t + 1,
+                      KEYSTONE_FACE_H + KEYSTONE_HOOK + KEYSTONE_CLIP + 2 * KEYSTONE_WALL]);
     }
 }
 
@@ -572,9 +605,15 @@ module connector_panel(connectors, rack_u = 1, spacing = undef, positions = unde
                  str(" (", lip_len, " x ", stiffener_depth, " x ", stiffener_t, " mm)"))));
 
     union() {
-        rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra)
+        difference() {
+            union() {
+                rack_panel(rack_u, panel_t, corner_r, bolt_clear, slot_extra);
+                for (i = [0 : n - 1]) translate([pos[i][0], 0, pos[i][1]])
+                    connector_boss(connectors[i], panel_t);
+            }
             for (i = [0 : n - 1]) translate([pos[i][0], 0, pos[i][1]])
                 connector_cut(connectors[i], panel_t, skin);
+        }
         if (lip_bottom)
             stiffener_lip(lip_len, stiffener_depth, stiffener_t, stiffener_fillet, panel_t);
         if (lip_top)
@@ -608,10 +647,41 @@ module connector_test_coupon(types = ["neutrik_d", "keystone"], gap = 6,
     plate_h = max(hs) + 2 * gap;
     xs = connector_xs(types, plate_w);
     difference() {
-        translate([0, panel_t, 0]) rotate([90, 0, 0])
-            linear_extrude(panel_t) rounded_rect(plate_w, plate_h, corner_r);
+        union() {
+            translate([0, panel_t, 0]) rotate([90, 0, 0])
+                linear_extrude(panel_t) rounded_rect(plate_w, plate_h, corner_r);
+            for (i = [0 : n - 1]) translate([xs[i], 0, plate_h / 2])
+                connector_boss(types[i], panel_t);
+        }
         for (i = [0 : n - 1]) translate([xs[i], 0, plate_h / 2])
             connector_cut(types[i], panel_t, skin);
+    }
+}
+
+// Row of keystone cuts whose stop lips sit at different depths (left to
+// right, each marked on the front), to find the depth that suits a maker's
+// jacks: the jack should click in, sit flush and not rattle.
+module keystone_test_coupon(stops = [7.5, 8, 8.5], gap = 4, panel_t = 5, corner_r = 2,
+                            text_depth = 0.6) {
+    n = len(stops);
+    w = KEYSTONE_FOOTPRINT[0];
+    plate_w = n * w + (n + 1) * gap;
+    plate_h = KEYSTONE_FOOTPRINT[1] + 2 * gap;
+    xs = [for (i = [0 : n - 1]) -plate_w / 2 + gap + w / 2 + i * (w + gap)];
+    difference() {
+        union() {
+            translate([0, panel_t, 0]) rotate([90, 0, 0])
+                linear_extrude(panel_t) rounded_rect(plate_w, plate_h, corner_r);
+            for (i = [0 : n - 1]) translate([xs[i], 0, plate_h / 2])
+                connector_boss("keystone", panel_t, stops[i]);
+        }
+        for (i = [0 : n - 1]) translate([xs[i], 0, plate_h / 2]) {
+            connector_cut("keystone", panel_t, keystone_stop = stops[i]);
+            // label below the box, cut into the front face
+            translate([0, text_depth, -KEYSTONE_FACE_H / 2 - KEYSTONE_HOOK - KEYSTONE_WALL - 1])
+                rotate([90, 0, 0]) linear_extrude(text_depth + 1)
+                    text(str(stops[i]), size = 3.5, halign = "center", valign = "top");
+        }
     }
 }
 
