@@ -8,6 +8,8 @@ no shelf behind it.
 The geometry lives in `connector_panel()` in `../lib/rack10.scad`;
 `connector_panel.scad` here is an example (four rear-mounted Neutrik D connectors and
 three keystones on 1U) and the file to copy for a new panel.
+`R3p1.scad` is a panel made that way: two rear-mounted Neutrik D connectors on the
+left and four keystones to the right, on 1U.
 
 ## Design rules
 
