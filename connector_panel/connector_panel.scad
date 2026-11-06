@@ -17,8 +17,8 @@
 //     against (profile from printables.com/model/1088263). Insert the jack
 //     from the front, hook at the bottom first, then press the latch side in.
 //
-// Set test_coupon = "connectors" and print that first to check the fit of
-// both connector types; the sizes are constants in ../lib/rack10.scad.
+// test_coupon prints a small plate with the same cuts instead of the whole
+// panel; the connector sizes are constants in ../lib/rack10.scad.
 //
 // Print with the front panel face down on the bed (print_orientation = true).
 

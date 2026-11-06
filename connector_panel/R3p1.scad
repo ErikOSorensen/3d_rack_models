@@ -1,16 +1,17 @@
-// Connector panel R3p1: 1U panel for a 10" benchtop rack with two Neutrik D-size
-// connectors (rear mounted) on the left and four keystone jacks to the right.
+// Connector panel R3p1: 1U panel for a 10" benchtop rack with three Neutrik
+// D-size connectors (rear mounted) on the left and five keystone jacks to the
+// right: a full row, for whatever the computer rack may need later.
 // Geometry comes from ../lib/rack10.scad; see README.md here for the design rules.
 //
 // Print with the front panel face down on the bed (print_orientation = true).
-// Set test_coupon = "connectors" and print that first to check the fit of both types.
+// test_coupon prints a small plate with the same cuts instead of the whole panel.
 
 use <../lib/rack10.scad>
 
 /* [Connectors] */
 // left to right seen from the front: "neutrik_d_rear", "neutrik_d" or "keystone"
-connectors = ["neutrik_d_rear", "neutrik_d_rear",
-              "keystone", "keystone", "keystone", "keystone"];
+connectors = ["neutrik_d_rear", "neutrik_d_rear", "neutrik_d_rear",
+              "keystone", "keystone", "keystone", "keystone", "keystone"];
 spacing = -1;               // gap between pockets in mm; -1 spreads the row evenly
 skin = 2;                   // panel thickness left at Neutrik D connectors
 

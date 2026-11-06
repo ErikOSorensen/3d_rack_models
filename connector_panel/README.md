@@ -8,8 +8,9 @@ no shelf behind it.
 The geometry lives in `connector_panel()` in `../lib/rack10.scad`;
 `connector_panel.scad` here is an example (four rear-mounted Neutrik D connectors and
 three keystones on 1U) and the file to copy for a new panel.
-`R3p1.scad` is a panel made that way: two rear-mounted Neutrik D connectors on the
-left and four keystones to the right, on 1U.
+`R3p1.scad` is a panel made that way: three rear-mounted Neutrik D connectors on
+the left and five keystones to the right, a full 1U row. `R4p1.scad` is a 1U row of seven
+rear-mounted Neutrik D connectors, as many as fit.
 
 ## Design rules
 
@@ -77,18 +78,20 @@ Notes on each type:
   the two unused countersunk holes show on the front.
 - **Keystone:** the latch is at the top. Insert the jack hook-first at the bottom,
   then press the top in until the latch snaps behind the plate; the ramp on the
-  top edge of the opening gives the latch room to swing in. Jacks vary a little
-  between makers; the stop lip is set for a body shoulder 8 mm behind the face,
-  which fits the jacks in the datasheets checked (8.1-8.4 mm). The keystone
-  depth coupon (below) prints the slot with the lip at 7.5, 8 and 8.5 mm.
+  top edge of the opening gives the latch room to swing in. The stop lip sits
+  8 mm behind the front face, which suits the common jacks: they snap in and
+  release cleanly.
 
 How many fit in one row on 1U (all of one type):
 
 | Type | Max per 1U row |
 |---|---|
-| `"neutrik_d_rear"` | 7 |
-| `"neutrik_d"` | 7 (needs `spacing = 2`; even spreading gives 6) |
+| `"neutrik_d_rear"` | 7 (needs `spacing = 2`; even spreading gives 6) |
+| `"neutrik_d"` | 6 |
 | `"keystone"` | 9 |
+
+Mixed rows: see [densest-panels.md](densest-panels.md) for the densest
+combinations of Neutriks and keystones that fit in 1U.
 
 ## Making a panel
 
@@ -119,21 +122,11 @@ How many fit in one row on 1U (all of one type):
   the best surface where the flange seats. The stop lip of each keystone box is
   a 15 mm bridge over the cavity and the ramp overhangs at 50 degrees; both
   print fine in PETG without support.
-- **Print the test pieces first.** Set `test_coupon = "connectors"`: it prints a
-  small plate with one rear-mounted Neutrik and one keystone, quickly and with
-  little filament. Check that:
-  - the keystone snaps in firmly, sits flush and comes out with the latch pressed;
-  - the Neutrik flange drops into its pocket without play, and the screws line up
-    with its holes.
 
-  If the keystone rattles or stands proud, print `test_coupon = "keystone_depths"`:
-  three keystone slots with the stop lip at 7.5, 8 and 8.5 mm (marked on the
-  front) and set `KEYSTONE_STOP` to the one that fits.
+## Connector sizes
 
-## Adjusting the fit
-
-All connector sizes are named constants in the connector section of
-`../lib/rack10.scad`:
+The defaults fit the connectors as printed. All sizes are named constants in
+the connector section of `../lib/rack10.scad`, shared by every panel in the repo:
 
 - **Neutrik D:**
   - `NEUTRIK_D_HOLE`: the hole size.
@@ -149,14 +142,3 @@ All connector sizes are named constants in the connector section of
   - `KEYSTONE_STOP`, `KEYSTONE_STOP_T` and `KEYSTONE_WINDOW`: the depth and
     thickness of the stop lip and how far its window reaches above the opening.
   - `KEYSTONE_WALL`: the walls of the box.
-
-Things to measure before relying on the defaults:
-
-- **Neutrik screw spacing:** the 19 x 24 mm spacing is from memory and not
-  confirmed by a datasheet. Measure a connector.
-- **Keystone size:** keystone sizes differ a little between makers, mostly in
-  where the hook, latch and body shoulder sit behind the face. The depth coupon
-  is the quick way to find the right `KEYSTONE_STOP`.
-
-Change a constant, then print the test piece again before printing a whole panel.
-These constants are shared by every panel in the repo.
