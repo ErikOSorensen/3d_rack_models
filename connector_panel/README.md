@@ -10,7 +10,8 @@ The geometry lives in `connector_panel()` in `../lib/rack10.scad`;
 three keystones on 1U) and the file to copy for a new panel.
 `R3p1.scad` is a panel made that way: three rear-mounted Neutrik D connectors on
 the left and five keystones to the right, a full 1U row. `R4p1.scad` is a 1U row of seven
-rear-mounted Neutrik D connectors, as many as fit.
+rear-mounted Neutrik D connectors, as many as fit, and `R4p2.scad` a 1U row of
+eight keystones.
 
 ## Design rules
 
