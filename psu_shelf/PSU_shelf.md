@@ -25,6 +25,8 @@ the way behind the equipment.
 
 `tie_down_shelf()` in `../lib/rack10.scad` builds it; `psu_shelf.scad` holds the
 numbers above and is the file to copy for a different size.
+`psu_shelf_150.scad` is such a copy: the same shelf 150 mm deep, with 12 x 7
+tie holes.
 
 Printing: both ways up work without supports. Floor down is the stronger
 print, since the floor's layers run along its length, but the footprint is
